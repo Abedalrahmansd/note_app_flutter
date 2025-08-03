@@ -4,5 +4,7 @@ import 'controllers/note_controller.dart';
 
 class NotesBinding extends Bindings {
   @override
-  void dependencies() => Get.put(NoteController());
+  void dependencies() {
+    Get.put<NoteController>(NoteController(), permanent: true);
+  }
 }

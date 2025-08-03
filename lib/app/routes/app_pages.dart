@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 
-import '../modules/auth/bindings.dart';
 import '../modules/auth/views/login_page.dart';
 import '../modules/auth/views/register_page.dart';
 import '../modules/notes/bindings.dart';
@@ -13,12 +12,12 @@ final routes = [
   GetPage(
     name: AppRoutes.LOGIN,
     page: () => LoginPage(),
-    binding: AuthBinding(),
+    // binding: AuthBinding(),
   ),
   GetPage(
     name: AppRoutes.REGISTER,
     page: () => RegisterPage(),
-    binding: AuthBinding(),
+    // binding: AuthBinding(),
   ),
   GetPage(
     name: AppRoutes.NOTES,
