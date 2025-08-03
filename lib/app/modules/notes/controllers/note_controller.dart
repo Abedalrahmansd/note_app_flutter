@@ -5,9 +5,12 @@ import '../../../data/providers/note_provider.dart';
 
 class NoteController extends GetxController {
   final notes = <NoteModel>[].obs;
+  final allNotes = <NoteModel>[].obs;
   final provider = NoteProvider();
   final TextEditingController searchController = TextEditingController();
   SortType currentSortType = SortType.dateDesc;
+  RxBool showArchived = false.obs;
+  RxBool showDeleted = false.obs;
 
   @override
   void onInit() {
@@ -20,15 +23,16 @@ class NoteController extends GetxController {
     searchController.dispose();
     super.onClose();
   }
-  
 
   // Extension to convert Color to hex string
 
-  void fetchNotes() async {
+  Future<void> fetchNotes() async {
     final response = await provider.getNotes();
     if (response.isOk) {
-      notes.assignAll(response.body ?? []);
-      sortNotes(SortType.dateDesc);
+      allNotes.assignAll(response.body ?? []);
+      notes.assignAll(allNotes);
+      sortNotes(currentSortType);
+      if (showArchived.value) filterOnlyArchived();
     }
   }
 
@@ -70,15 +74,17 @@ class NoteController extends GetxController {
 
   void updateNote(
     int id,
-    String title,
-    String content,
-    String color,
-    bool isPinned,
+    String? title,
+    String? content,
+    String? color,
+    bool? isPinned,
   ) async {
     final body = {
       'title': title,
       'content': content,
-      'color': "#$color", // Assuming color is a hex string
+      'color': color != null
+          ? "#$color"
+          : null, // Assuming color is a hex string
       'is_pinned': isPinned,
       // 'status': 'draft', // or 'published', etc.
     };
@@ -167,7 +173,149 @@ class NoteController extends GetxController {
     notes.refresh();
   }
 
-  
+  void filterOnlyArchived([bool toggle = true]) {
+    if (showArchived.value && toggle) {
+      unfilterAll();
+      return;
+    }
+
+    // print(notes);
+    notes.value = allNotes.where((note) => note.isArchived ?? false).toList();
+    if (toggle) showArchived.value = true;
+    sortNotes(currentSortType);
+  }
+
+  void unfilterAll() {
+    notes.assignAll(allNotes);
+    showArchived.value = false;
+    sortNotes(currentSortType);
+  }
+
+  Future<void> pinNote(int id) async {
+    final res = await provider.pinNote(id);
+    if (res.isOk && res.body != null) {
+      final index = allNotes.indexWhere((n) => n.id == id);
+      if (index != -1) allNotes[index] = res.body!;
+      notes.assignAll(allNotes);
+      sortNotes(currentSortType);
+      Get.snackbar('Pinned', 'Note pinned successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to pin note');
+    }
+  }
+
+  Future<void> unpinNote(int id) async {
+    final res = await provider.unpinNote(id);
+    if (res.isOk && res.body != null) {
+      final index = allNotes.indexWhere((n) => n.id == id);
+      if (index != -1) allNotes[index] = res.body!;
+      notes.assignAll(allNotes);
+      sortNotes(currentSortType);
+      Get.snackbar('Unpinned', 'Note unpinned successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to unpin note');
+    }
+  }
+
+  Future<void> archiveNote(int id) async {
+    final res = await provider.archiveNote(id);
+    if (res.isOk && res.body != null) {
+      final index = allNotes.indexWhere((n) => n.id == id);
+      if (index != -1) allNotes[index] = res.body!;
+      notes.assignAll(allNotes);
+      sortNotes(currentSortType);
+      Get.snackbar('Archived', 'Note archived successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to archive note');
+    }
+  }
+
+  Future<void> unarchiveNote(int id) async {
+    final res = await provider.unarchiveNote(id);
+    if (res.isOk && res.body != null) {
+      final index = allNotes.indexWhere((n) => n.id == id);
+      if (index != -1) allNotes[index] = res.body!;
+      notes.assignAll(allNotes);
+      filterOnlyArchived(false);
+      Get.snackbar('Unarchived', 'Note unarchived successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to unarchive note');
+    }
+  }
+
+  Future<void> markDeleted(int id) async {
+    final res = await provider.markDeleted(id);
+    if (res.isOk && res.body != null) {
+      final index = notes.indexWhere((n) => n.id == id);
+      if (index != -1) notes[index] = res.body!;
+      // notes.refresh();
+      sortNotes(currentSortType);
+      Get.snackbar('Deleted', 'Marked deleted successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to mark note as deleted');
+    }
+  }
+
+  Future<void> addTags(int id, List<String> tags) async {
+    final res = await provider.addTags(id, tags);
+    if (res.isOk && res.body != null) {
+      final index = notes.indexWhere((n) => n.id == id);
+      if (index != -1) notes[index] = res.body!;
+      notes.refresh();
+      Get.snackbar('Tags Added', 'Tags added successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to add tags');
+    }
+  }
+
+  Future<void> removeTags(int id, List<String> tags) async {
+    final res = await provider.removeTags(id, tags);
+    if (res.isOk && res.body != null) {
+      final index = notes.indexWhere((n) => n.id == id);
+      if (index != -1) notes[index] = res.body!;
+      notes.refresh();
+      Get.snackbar('Tags Removed', 'Tags removed successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to remove tags');
+    }
+  }
+
+  Future<void> changeColor(int id, String color) async {
+    final res = await provider.changeColor(id, color);
+    if (res.isOk && res.body != null) {
+      final index = notes.indexWhere((n) => n.id == id);
+      if (index != -1) notes[index] = res.body!;
+      notes.refresh();
+      Get.snackbar('Color Changed', 'Note color changed successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to change note color');
+    }
+  }
+
+  //uncompleted backend
+  /* Future<void> changeCategory(int id, int categoryId) async {
+    final res = await provider.changeCategory(id, categoryId);
+    if (res.isOk && res.body != null) {
+      final index = notes.indexWhere((n) => n.id == id);
+      if (index != -1) notes[index] = res.body!;
+      notes.refresh();
+      Get.snackbar('Category Changed', 'Note category changed successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to change note category');
+    }
+  } */
+
+  Future<void> changeStatus(int id, String status) async {
+    final res = await provider.changeStatus(id, status);
+    if (res.isOk && res.body != null) {
+      final index = notes.indexWhere((n) => n.id == id);
+      if (index != -1) notes[index] = res.body!;
+      notes.refresh();
+      Get.snackbar('Status Changed', 'Note status changed successfully');
+    } else {
+      Get.snackbar('Error', 'Failed to change note status');
+    }
+  }
 }
 
 enum SortType { dateDesc, dateAsc, titleAsc, titleDesc, colorAsc }
