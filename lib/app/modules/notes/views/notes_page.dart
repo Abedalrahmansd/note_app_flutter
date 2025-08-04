@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:note_app/app/data/models/note_model.dart';
@@ -8,10 +7,11 @@ import 'package:note_app/app/modules/auth/controllers/auth_controller.dart';
 import 'package:note_app/app/modules/notes/views/widgets/delete_dialog.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../theme/theme_controller.dart';
-import '../controllers/note_controller.dart';
 import 'package:hexcolor/hexcolor.dart';
 
-class NotesPage extends GetView<NoteController> {
+import '../controllers/implementations/i_note_controller.dart';
+
+class NotesPage extends GetView<INoteController> {
   final _scrollController = ScrollController();
   final RxString _searchQuery = ''.obs;
   final _debouncer = Debouncer(milliseconds: 300);
@@ -57,17 +57,20 @@ class NotesPage extends GetView<NoteController> {
                         ),
                         title: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
-                          child: Text(
-                            _searchQuery.value.isEmpty
-                                ? 'Notes'
-                                // 'Notes (${controller.notes.length})'
-                                : 'Searching...',
-                            key: ValueKey(
-                              '${_searchQuery.value}_${theme.hashCode}',
-                            ),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: isExpanded ? 22 : 18,
-                              fontWeight: FontWeight.w600,
+                          child: Obx(
+                            () => Text(
+                              _searchQuery.value.isEmpty
+                                  ? controller.showArchived.value
+                                        ? 'Archived Notes (${controller.notes.length})'
+                                        : 'Notes (${controller.notes.length})'
+                                  : 'Searching...',
+                              key: ValueKey(
+                                '${_searchQuery.value}_${theme.hashCode}',
+                              ),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontSize: isExpanded ? 22 : 18,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -171,10 +174,12 @@ class NotesPage extends GetView<NoteController> {
       final filteredNotes = controller.notes.where((note) {
         //reversed if needed
         //archieved notes
-        if ((note.isArchived ?? false) && !controller.showArchived.value)
+        if ((note.isArchived ?? false) && !controller.showArchived.value) {
           return false;
-        if ((note.isDeleted ?? false) && !controller.showDeleted.value)
+        }
+        if ((note.isDeleted ?? false) && !controller.showDeleted.value) {
           return false;
+        }
         if (_searchQuery.value.isEmpty) return true;
         final query = _searchQuery.value.toLowerCase();
         return (note.title?.toLowerCase().contains(query) ?? false) ||
@@ -421,8 +426,10 @@ class NotesPage extends GetView<NoteController> {
   void _showNoteForm(BuildContext context, {NoteModel? note}) {
     final titleController = TextEditingController(text: note?.title);
     final contentController = TextEditingController(text: note?.content);
-    final RxString colorController =
-        (note?.color ?? (Get.isDarkMode ? '2C2C2C' : 'ffffff')).obs;
+    final RxString colorController = AppPalette.primary.value
+        .toRadixString(16)
+        .obs;
+    // (note?.color ?? (Get.isDarkMode ? '333333' : 'ffffff')).obs;
     final RxBool isPinned = (note?.isPinned ?? false).obs;
     final isEditing = note != null;
 

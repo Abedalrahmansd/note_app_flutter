@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../modules/auth/views/connection_choice.dart';
 import '../modules/auth/views/login_page.dart';
 import '../modules/auth/views/register_page.dart';
 import '../modules/notes/bindings.dart';
@@ -9,6 +10,11 @@ import 'app_routes.dart';
 
 final routes = [
   GetPage(name: AppRoutes.SPLASH, page: () => SplashScreen()),
+  GetPage(
+    name: AppRoutes.CONNECTION_CHOICE,
+    page: () => ConnectionChoiceScreen(),
+    // binding: AuthBinding(),
+  ),
   GetPage(
     name: AppRoutes.LOGIN,
     page: () => LoginPage(),
@@ -22,6 +28,6 @@ final routes = [
   GetPage(
     name: AppRoutes.NOTES,
     page: () => NotesPage(),
-    binding: NotesBinding(),
+    // binding: NotesBinding(),
   ),
 ];

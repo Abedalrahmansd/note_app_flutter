@@ -3,7 +3,11 @@ import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../theme/app_theme.dart';
-import '../../../theme/theme_controller.dart'; // Add lottie package to pubspec.yaml
+import '../../../theme/theme_controller.dart';
+import '../../data/helpers/auth_helper.dart';
+import '../../routes/app_routes.dart';
+import '../notes/bindings.dart';
+import '../notes/views/notes_page.dart'; // Add lottie package to pubspec.yaml
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -15,6 +19,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _opacityAnimation;
   final ThemeController _themeController = Get.find();
+
 
   @override
   void initState() {
@@ -31,8 +36,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _navigateToHome() async {
-    await Future.delayed(const Duration(seconds: 2));
-    Get.offNamed('/notes'); // Replace with your home route
+    await Future.delayed(Duration(seconds: 3), checkAuth);
   }
 
   @override
