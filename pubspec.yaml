@@ -38,6 +38,12 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   intl: ^0.20.2
   hexcolor: ^3.0.1
+  flutter_launcher_icons: ^0.14.4
+  change_app_package_name: ^1.5.0
+  lottie: ^3.3.1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -62,8 +68,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - assets/animations/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -91,3 +97,22 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icons/icon.png"  # Path to your 1024x1024 icon
+  adaptive_icon_background: "#4A6AFF"  # Your primary color from AppPalette
+  min_sdk_android: 21  # Required for adaptive icons
+  web:
+    generate: true
+    image_path: "assets/icons/icon.png"
+    background_color: "#4A6AFF"
+    theme_color: "#4A6AFF"
+  windows:
+    generate: true
+    image_path: "assets/icons/icon.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/icons/icon.png"

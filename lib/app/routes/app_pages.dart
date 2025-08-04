@@ -8,7 +8,7 @@ import '../modules/splash/splash_page.dart';
 import 'app_routes.dart';
 
 final routes = [
-  GetPage(name: AppRoutes.SPLASH, page: () => SplashPage()),
+  GetPage(name: AppRoutes.SPLASH, page: () => SplashScreen()),
   GetPage(
     name: AppRoutes.LOGIN,
     page: () => LoginPage(),
