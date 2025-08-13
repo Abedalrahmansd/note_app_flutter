@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../modules/auth/views/connection_choice.dart';
 import '../modules/auth/views/login_page.dart';
 import '../modules/auth/views/register_page.dart';
-import '../modules/notes/bindings.dart';
 import '../modules/notes/views/notes_page.dart';
 import '../modules/splash/splash_page.dart';
 import 'app_routes.dart';

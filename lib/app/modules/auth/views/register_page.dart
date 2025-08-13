@@ -8,6 +8,8 @@ import 'widgets/auth_components.dart';
 class RegisterPage extends GetView<AuthController> {
   final _formKey = GlobalKey<FormState>();
 
+  RegisterPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();

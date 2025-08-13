@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppPalette {
-  static const Color primary = Color(0xFFBB86FC);
+  static const Color primary = Color(0xFFC1A78E);
   static const Color cardDark = Color(0xFF121212);
   static const Color cardLight = Color(0xFFF5F5F5);
   static const Color sheetDark = Color(0xFF1E1E1E);
@@ -54,6 +54,19 @@ class AppPalette {
     {'name': 'Umber', 'color': '635147'},
   ]; */
   static List<Map<String, dynamic>> noteColors = [
+    {'name': 'White', 'color': 'FFFFFF', 'textColor': 'black'},
+    {'name': 'Black', 'color': '333333', 'textColor': 'white'},
+    {"name": "Soft Peach", "color": "FFE4D6"},
+    {"name": "Coral", "color": "FF6F61"},
+    {"name": "Sunflower", "color": "FFE066"},
+    {"name": "Mint Green", "color": "B5EAD7"},
+    {"name": "Sky Blue", "color": "A9DEF9"},
+    {"name": "Lavender", "color": "E0BBE4"},
+    {"name": "Slate Grey", "color": "B0BEC5"},
+    // {"name": "Midnight", "color": "191970"},
+  ];
+
+  /* [
     // dark
     {'name': 'Copper', 'color': 'B87333', 'textColor': 'white'},
     {'name': 'Rust', 'color': 'B7410E', 'textColor': 'white'},
@@ -95,7 +108,7 @@ class AppPalette {
     {'name': 'Pearl', 'color': 'F0F0F0', 'textColor': 'black'},
     {'name': 'Default Light', 'color': 'F5F7FA', 'textColor': 'black'},
     {'name': 'White', 'color': 'FFFFFF', 'textColor': 'black'},
-  ];
+  ]; */
 }
 //     {'name': 'Midnight', 'color': '191970'},
 
@@ -118,6 +131,11 @@ class AppTheme {
       backgroundColor: AppPalette.sheetLight,
       modalBackgroundColor: AppPalette.sheetLight,
     ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppPalette.sheetLight,
+      titleTextStyle: const TextStyle(color: Colors.black87),
+      contentTextStyle: const TextStyle(color: Colors.black54),
+    ),
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -137,6 +155,11 @@ class AppTheme {
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppPalette.sheetDark,
       modalBackgroundColor: AppPalette.sheetDark,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppPalette.sheetDark,
+      titleTextStyle: const TextStyle(color: Colors.white),
+      contentTextStyle: const TextStyle(color: Colors.white70),
     ),
   );
 }

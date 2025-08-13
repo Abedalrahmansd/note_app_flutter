@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../../theme/app_theme.dart';
 import '../../../theme/theme_controller.dart';
 import '../../data/helpers/auth_helper.dart';
-import '../../routes/app_routes.dart';
-import '../notes/bindings.dart';
-import '../notes/views/notes_page.dart'; // Add lottie package to pubspec.yaml
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen>

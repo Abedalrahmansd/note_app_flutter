@@ -16,15 +16,20 @@ abstract class INoteController {
   TextEditingController get searchController;
 
   Future<void> fetchNotes();
-  void createNote(String title, String content, String color, bool isPinned);
-  void updateNote(
+  Future<void> createNote(
+    String title,
+    String content,
+    String color,
+    bool isPinned,
+  );
+  Future<void> updateNote(
     int id,
     String? title,
     String? content,
     String? color,
     bool? isPinned,
   );
-  void deleteNote(int id);
+  Future<void> deleteNote(int id);
 
   void sortNotes(SortType type);
   void filterOnlyArchived([bool toggle = true]);

@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_function_declarations_over_variables
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/note_model.dart';
@@ -45,7 +47,7 @@ class NoteController extends GetxController implements INoteController {
   }
 
   @override
-  void createNote(
+  Future<void> createNote(
     String title,
     String content,
     String color,
@@ -53,66 +55,69 @@ class NoteController extends GetxController implements INoteController {
   ) async {
     // print("Creating note with title: $title, content: $content, color: $color");
     // return;
-    if (title.isEmpty) {
+    if (title.isNotEmpty || content.isNotEmpty) {
       //Get.snackbar('Error', 'Title cannot be empty');
-      return;
-    }
-    final body = {
-      'title': title,
-      'content': content,
-      'color': "#$color", // Assuming color is a hex string
-      'status': 'draft',
-      // Optional fields:
-      'is_pinned': isPinned,
-      // 'is_archived': false,
-      // 'is_deleted': false,
-      // 'category': null,
-      // 'tags': null,
-    };
+      // title = 'Untitled Note';
 
-    final response = await provider.createNote(body);
+      final body = {
+        'title': title,
+        'content': content,
+        'color': "#$color", // Assuming color is a hex string
+        'status': 'draft',
+        // Optional fields:
+        'is_pinned': isPinned,
+        // 'is_archived': false,
+        // 'is_deleted': false,
+        // 'category': null,
+        // 'tags': null,
+      };
 
-    if (response.isOk && response.body != null) {
-      notes.insert(0, response.body!); // update UI
-      sortNotes(currentSortType);
-      //Get.snackbar('Success', 'Note created');
-    } else {
-      //Get.snackbar('Error', 'Failed to create note');
+      final response = await provider.createNote(body);
+
+      if (response.isOk && response.body != null) {
+        notes.insert(0, response.body!); // update UI
+        sortNotes(currentSortType);
+        //Get.snackbar('Success', 'Note created');
+      } else {
+        //Get.snackbar('Error', 'Failed to create note');
+      }
     }
   }
 
   @override
-  void updateNote(
+  Future<void> updateNote(
     int id,
     String? title,
     String? content,
     String? color,
     bool? isPinned,
   ) async {
-    final body = {
-      'title': title,
-      'content': content,
-      'color': color != null
-          ? "#$color"
-          : null, // Assuming color is a hex string
-      'is_pinned': isPinned,
-      // 'status': 'draft', // or 'published', etc.
-    };
+    if ((title?.isNotEmpty ?? false) || (content?.isNotEmpty ?? false)) {
+      final body = {
+        'title': title,
+        'content': content,
+        'color': color != null
+            ? "#$color"
+            : null, // Assuming color is a hex string
+        'is_pinned': isPinned,
+        // 'status': 'draft', // or 'published', etc.
+      };
 
-    final res = await provider.updateNote(id, body);
-    if (res.isOk && res.body != null) {
-      final index = notes.indexWhere((n) => n.id == id);
-      if (index != -1) notes[index] = res.body!;
-      notes.refresh();
-      sortNotes(currentSortType);
-      //Get.snackbar('Updated', 'Note updated successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to update note');
+      final res = await provider.updateNote(id, body);
+      if (res.isOk && res.body != null) {
+        final index = notes.indexWhere((n) => n.id == id);
+        if (index != -1) notes[index] = res.body!;
+        notes.refresh();
+        sortNotes(currentSortType);
+        //Get.snackbar('Updated', 'Note updated successfully');
+      } else {
+        //Get.snackbar('Error', 'Failed to update note');
+      }
     }
   }
 
   @override
-  void deleteNote(int id) async {
+  Future<void> deleteNote(int id) async {
     final res = await provider.deleteNote(id);
     if (res.isOk) {
       notes.removeWhere((n) => n.id == id);
@@ -127,8 +132,9 @@ class NoteController extends GetxController implements INoteController {
     return (a, b) {
       final aPinned = a.isPinned ?? false;
       final bPinned = b.isPinned ?? false;
-      if (aPinned != bPinned)
+      if (aPinned != bPinned) {
         return aPinned ? -1 : 1; // true first (pinned on top)
+      }
       return secondary(a, b);
     };
   }
@@ -141,8 +147,8 @@ class NoteController extends GetxController implements INoteController {
   };
 
   final Comparator<NoteModel> _titleComparator = (a, b) {
-    final aTitle = (a.title ?? '').toLowerCase();
-    final bTitle = (b.title ?? '').toLowerCase();
+    final aTitle = (a.title).toLowerCase();
+    final bTitle = (b.title).toLowerCase();
     return aTitle.compareTo(bTitle);
   };
 
@@ -176,10 +182,6 @@ class NoteController extends GetxController implements INoteController {
       case SortType.colorAsc:
         currentSortType = SortType.colorAsc;
         notes.sort(_withPinnedFirst(_colorComparator));
-        break;
-      default:
-        currentSortType = SortType.dateAsc;
-        notes.sort(_withPinnedFirst(_dateComparator));
         break;
     }
     notes.refresh();

@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_function_declarations_over_variables
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
@@ -43,62 +45,65 @@ class OfflineNoteController extends GetxController implements INoteController {
   }
 
   @override
-  void createNote(
+  Future<void> createNote(
     String title,
     String content,
     String color,
     bool isPinned,
   ) async {
-    if (title.isEmpty) {
+    if (title.isNotEmpty || content.isNotEmpty) {
       //Get.snackbar('Error', 'Title cannot be empty');
-      return;
+      // title = 'Untitled Note';
+
+      final note = NoteModel(
+        id: 0, // Hive will assign an ID later
+        title: title,
+        content: content,
+        color: "#$color",
+        isPinned: isPinned,
+        status: 'draft',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final hiveKey = await _noteBox.add(note);
+      final updatedNote = note.copyWith(id: hiveKey);
+      await _noteBox.put(hiveKey, updatedNote);
+
+      notes.insert(0, updatedNote);
+      allNotes.insert(0, updatedNote);
+      sortNotes(currentSortType);
     }
-    final note = NoteModel(
-      id: 0, // Hive will assign an ID later
-      title: title,
-      content: content,
-      color: "#$color",
-      isPinned: isPinned,
-      status: 'draft',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    final hiveKey = await _noteBox.add(note);
-    final updatedNote = note.copyWith(id: hiveKey);
-    await _noteBox.put(hiveKey, updatedNote);
-
-    notes.insert(0, updatedNote);
-    allNotes.insert(0, updatedNote);
-    sortNotes(currentSortType);
     //Get.snackbar('Success', 'Note created');
   }
 
   @override
-  void updateNote(
+  Future<void> updateNote(
     int id,
     String? title,
     String? content,
     String? color,
     bool? isPinned,
   ) async {
-    final note = _noteBox.get(id);
-    if (note != null) {
-      final updated = note.copyWith(
-        title: title,
-        content: content,
-        color: color != null ? "#$color" : null,
-        isPinned: isPinned,
-        updatedAt: DateTime.now(),
-      );
-      await _noteBox.put(id, updated);
-      _refreshNoteInMemory(id, updated);
-      //Get.snackbar('Updated', 'Note updated successfully');
+    if ((title?.isNotEmpty ?? false) || (content?.isNotEmpty ?? false)) {
+      final note = _noteBox.get(id);
+      if (note != null) {
+        final updated = note.copyWith(
+          title: title,
+          content: content,
+          color: color != null ? "#$color" : null,
+          isPinned: isPinned,
+          updatedAt: DateTime.now(),
+        );
+        await _noteBox.put(id, updated);
+        _refreshNoteInMemory(id, updated);
+        //Get.snackbar('Updated', 'Note updated successfully');
+      }
     }
   }
 
   @override
-  void deleteNote(int id) async {
+  Future<void> deleteNote(int id) async {
     await _noteBox.delete(id);
     notes.removeWhere((n) => n.id == id);
     allNotes.removeWhere((n) => n.id == id);

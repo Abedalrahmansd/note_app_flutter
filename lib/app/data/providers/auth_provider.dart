@@ -32,7 +32,7 @@ class AuthProvider extends GetConnect {
     // This is a placeholder implementation
     final storage = FlutterSecureStorage();
     await storage.write(key: 'auth_token', value: token);
-    print(token);
+    // print(token);
   }
 
   Future<String?> getToken() async {

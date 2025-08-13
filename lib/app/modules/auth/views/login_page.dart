@@ -9,6 +9,8 @@ import 'widgets/auth_components.dart';
 class LoginPage extends GetView<AuthController> {
   final _formKey = GlobalKey<FormState>();
 
+  LoginPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     Get.put(AuthController());

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../../theme/theme_controller.dart';
 import '../../core/network/api_service.dart';
 import '../../modules/auth/controllers/auth_controller.dart';
-import '../../modules/notes/controllers/note_controller.dart';
 
 class GlobalBinding extends Bindings {
   @override
