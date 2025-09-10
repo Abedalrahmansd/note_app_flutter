@@ -85,6 +85,7 @@ class NotesPage extends GetView<INoteController> {
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontSize: isExpanded ? 22 : 18,
                   fontWeight: FontWeight.w700,
+                  color: AppPalette.primary,
                 ),
               ),
             ),
@@ -93,10 +94,10 @@ class NotesPage extends GetView<INoteController> {
                 gradient: LinearGradient(
                   colors: [
                     theme.appBarTheme.backgroundColor!,
-                    theme.appBarTheme.backgroundColor!.withOpacity(0.85),
+                    AppPalette.primary.withOpacity(0.1),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
             ),
