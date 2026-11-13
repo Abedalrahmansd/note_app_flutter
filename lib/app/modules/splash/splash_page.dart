@@ -18,7 +18,6 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _opacityAnimation;
   final ThemeController _themeController = Get.find();
 
-
   @override
   void initState() {
     super.initState();
@@ -61,9 +60,28 @@ class _SplashScreenState extends State<SplashScreen>
                   width: 250,
                   height: 250,
                   child: Lottie.asset(
-                    'assets/animations/notebook.json', // Replace with your Lottie file
+                    'assets/animations/Bismillah.json', // Replace with your Lottie file
                     controller: _controller,
                     fit: BoxFit.contain,
+                    //change color based on theme dark/light mode
+                    /* onLoaded: (composition) {
+                      _controller
+                        ..duration = composition.duration
+                        ..forward();
+                    }, */
+                    delegates: LottieDelegates(
+                      values: [
+                        ValueDelegate.color(
+                          const ['**'],
+                          value: Get.find<ThemeController>()
+                              .currentTheme
+                              .value
+                              .textTheme
+                              .bodyLarge!
+                              .color!,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 30),

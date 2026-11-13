@@ -54,7 +54,7 @@ class ConfirmationDialog extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Cancel',
+                    'Global->Cancel'.tr,
                     style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                   ),
                 ),

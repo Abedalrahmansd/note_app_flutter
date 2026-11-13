@@ -5,9 +5,9 @@ import '../../../../theme/app_theme.dart';
 import '../../../../theme/theme_controller.dart';
 import '../../../data/models/note_model.dart';
 import '../../../data/helpers/custom_navigation.dart';
-import '../../auth/controllers/auth_controller.dart';
 import '../controllers/implementations/i_note_controller.dart';
 import 'widgets/delete_dialog.dart';
+import 'package:typeset/typeset.dart';
 
 class NotesPage extends GetView<INoteController> {
   final _scrollController = ScrollController();
@@ -34,9 +34,9 @@ class NotesPage extends GetView<INoteController> {
               backgroundColor: AppPalette.primary,
               elevation: 4,
               icon: const Icon(Icons.add, color: Colors.black, size: 24),
-              label: const Text(
-                "New Note",
-                style: TextStyle(
+              label: Text(
+                'Note->Add_Note'.tr,
+                style: const TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.w600,
                 ),
@@ -72,18 +72,22 @@ class NotesPage extends GetView<INoteController> {
       elevation: 0,
       flexibleSpace: LayoutBuilder(
         builder: (context, constraints) {
-          final isExpanded = constraints.maxHeight > 100;
+          // final isExpanded = constraints.maxHeight > 100;
           return FlexibleSpaceBar(
-            titlePadding: const EdgeInsets.only(left: 16, bottom: 12),
+            titlePadding: const EdgeInsets.only(
+              right: 16,
+              left: 16,
+              bottom: 12,
+            ),
             title: Obx(
               () => Text(
                 _searchQuery.value.isEmpty
                     ? controller.showArchived.value
-                          ? 'Archived Notes (${controller.notes.length})'
-                          : 'Notes (${controller.notes.length})'
-                    : 'Searching...',
+                          ? "${'Note->Archived_Title'.tr} (${controller.notes.length})"
+                          : "${'Note->Title'.tr} (${controller.notes.length})"
+                    : 'Search->Title_Text'.tr,
                 style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: isExpanded ? 22 : 18,
+                  // fontSize: isExpanded ? 22 : 18,
                   fontWeight: FontWeight.w700,
                   color: AppPalette.primary,
                 ),
@@ -133,9 +137,29 @@ class NotesPage extends GetView<INoteController> {
           icon: const Icon(Icons.sort, color: AppPalette.primary),
           onPressed: () => _showSortOptions(Get.context!),
         ),
-        IconButton(
+        /* IconButton(
           icon: const Icon(Icons.logout, color: AppPalette.primary),
-          onPressed: () => Get.find<AuthController>().logout(),
+          onPressed: () async {
+            final result = await Get.dialog(
+              ConfirmationDialog(
+                theme: theme,
+                title: 'تسجيل الخروج',
+                description: 'هل أنت متأكد أنك تريد تسجيل الخروج؟',
+                confirmButtonBackgroundColor: AppPalette.errorRed,
+                confirmText: 'تسجيل الخروج',
+              ),
+            );
+            if (result ?? false) {
+              Get.find<AuthController>().logout();
+            }
+          },
+        ), */
+        IconButton(
+          icon: const Icon(Icons.settings, color: AppPalette.primary),
+          onPressed: () {
+            // Open settings page
+            CustomNavigation.navigateToSettingsPage();
+          },
         ),
       ],
     );
@@ -154,8 +178,10 @@ class NotesPage extends GetView<INoteController> {
           filled: true,
           fillColor: theme.inputDecorationTheme.fillColor,
           prefixIcon: Icon(Icons.search, color: theme.hintColor),
-          hintText: 'Search notes...',
-          hintStyle: TextStyle(color: theme.hintColor),
+          hintText: 'Search->Hint'.tr,
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
@@ -182,16 +208,27 @@ class NotesPage extends GetView<INoteController> {
             (note.content ?? '').toLowerCase().contains(query);
       }).toList();
 
-      if (filteredNotes.isEmpty) return _buildEmptyState(theme);
+      if (filteredNotes.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+
+          child: _buildEmptyState(theme),
+        );
+      }
 
       return RefreshIndicator(
         onRefresh: controller.fetchNotes,
         child: GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: MediaQuery.of(Get.context!).size.width >= 700
+            crossAxisCount:
+                // make it responsive
+                MediaQuery.of(Get.context!).size.width >= 1000
                 ? 4
+                : MediaQuery.of(Get.context!).size.width >= 600
+                ? 3
                 : 2,
+            // MediaQuery.of(Get.context!).size.width >= 700? 4: 2,
             mainAxisExtent: 180,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
@@ -219,9 +256,9 @@ class NotesPage extends GetView<INoteController> {
             Text(
               _searchQuery.value.isEmpty
                   ? (controller.showArchived.value
-                        ? 'No Archived Notes'
-                        : 'No Notes Yet')
-                  : 'No Matches Found',
+                        ? 'Note->Archive_Empty_Title'.tr
+                        : 'Note->No_Notes_Title'.tr)
+                  : 'Search->No_Results_Title'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.hintColor,
                 fontWeight: FontWeight.w500,
@@ -231,9 +268,9 @@ class NotesPage extends GetView<INoteController> {
             Text(
               _searchQuery.value.isEmpty
                   ? (controller.showArchived.value
-                        ? 'Hold a note to archive/unarchive'
-                        : 'Tap + to create your first note')
-                  : 'Try a different keyword',
+                        ? 'Note->Archive_Guide_Text'.tr
+                        : 'Note->Guide_Text'.tr)
+                  : 'Search->No_Results_Subtitle'.tr,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.hintColor,
               ),
@@ -247,7 +284,10 @@ class NotesPage extends GetView<INoteController> {
   // NOTE CARD
   Widget _buildNoteCard(NoteModel note, ThemeData theme) {
     final cardColor = _getNoteColor(note);
-    final textColor = cardColor.computeLuminance() > 0.5
+    final cardBgColor = _getNoteBgColor();
+    bool isColorBorder = false;
+    final textColor =
+        (isColorBorder ? cardBgColor : cardColor).computeLuminance() > 0.5
         ? Colors.black
         : Colors.white;
 
@@ -261,12 +301,12 @@ class NotesPage extends GetView<INoteController> {
         final result = await Get.dialog(
           ConfirmationDialog(
             theme: theme,
-            title: isArch ? 'Unarchive Note' : 'Archive Note',
+            title: isArch ? 'Note->Unarchive_Note'.tr : 'Note->Archive_Note'.tr,
             description: isArch
-                ? 'Are you sure you want to unarchive this note?'
-                : 'Are you sure you want to archive this note?',
+                ? 'Note->Unarchive_Confirm_Title'.tr
+                : 'Note->Archive_Confirm_Title'.tr,
             confirmButtonBackgroundColor: AppPalette.primary,
-            confirmText: isArch ? 'Unarchive' : 'Archive',
+            confirmText: isArch ? 'Note->Cancel'.tr : 'Global->Confirm'.tr,
           ),
         );
         if (result ?? false) {
@@ -282,16 +322,16 @@ class NotesPage extends GetView<INoteController> {
           return await Get.dialog(
             ConfirmationDialog(
               theme: theme,
-              title: 'Delete Note',
-              description: 'Are you sure you want to delete this note?',
-              confirmButtonBackgroundColor: AppPalette.deleteRed,
-              confirmText: 'Delete',
+              title: 'Note->Delete_Note'.tr,
+              description: 'Note->Delete_Confirm_Title'.tr,
+              confirmButtonBackgroundColor: AppPalette.errorRed,
+              confirmText: 'Global->Confirm'.tr,
             ),
           );
         },
         background: Container(
           decoration: BoxDecoration(
-            color: AppPalette.deleteRed,
+            color: AppPalette.errorRed,
             borderRadius: BorderRadius.circular(16),
           ),
           alignment: Alignment.centerRight,
@@ -302,8 +342,11 @@ class NotesPage extends GetView<INoteController> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           decoration: BoxDecoration(
-            color: cardColor,
+            color: isColorBorder ? cardBgColor : cardColor,
             borderRadius: BorderRadius.circular(16),
+            border: isColorBorder
+                ? Border.all(color: cardColor, width: 1)
+                : null,
             boxShadow: [
               BoxShadow(
                 color: theme.shadowColor.withOpacity(0.15),
@@ -319,8 +362,8 @@ class NotesPage extends GetView<INoteController> {
               if (note.title.isNotEmpty)
                 Text(
                   note.title,
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    // fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: textColor,
                   ),
@@ -329,32 +372,33 @@ class NotesPage extends GetView<INoteController> {
                 ),
               const SizedBox(height: 6),
               Expanded(
-                child: Text(
+                child: TypeSet(
                   note.content ?? '',
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    // fontSize: 14,
                     color: textColor.withOpacity(0.85),
                     height: 1.35,
                   ),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
+                  // maxLines: 5,
+                  // overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     note.createdAt != null
                         ? '${note.createdAt!.day}/${note.createdAt!.month}/${note.createdAt!.year}'
                         : '',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 8,
                       color: textColor.withOpacity(0.7),
                     ),
                   ),
                   if (note.isPinned ?? false)
-                    Icon(Icons.push_pin, size: 16, color: textColor),
+                    Icon(Icons.push_pin, size: 8, color: textColor),
                 ],
               ),
             ],
@@ -375,13 +419,17 @@ class NotesPage extends GetView<INoteController> {
     }
   }
 
+  Color _getNoteBgColor() {
+    return (Get.isDarkMode ? AppPalette.cardDark : AppPalette.cardLight);
+  }
+
   void _deleteNote(NoteModel note) {
     controller.deleteNote(note.id);
     Get.showSnackbar(
       GetSnackBar(
-        message: 'Note moved to trash',
+        message: 'Snackbar->Note_Deleted_Text'.tr,
         duration: const Duration(seconds: 2),
-        backgroundColor: AppPalette.deleteRed,
+        backgroundColor: AppPalette.errorRed,
         borderRadius: 8,
         margin: const EdgeInsets.all(16),
         icon: const Icon(Icons.delete, color: Colors.white),
@@ -401,54 +449,56 @@ class NotesPage extends GetView<INoteController> {
         ),
         padding: const EdgeInsets.all(24),
         child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Sort Notes By',
-                style: Get.textTheme.titleLarge?.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildSortOption(
-                'Date Created (Newest First)',
-                Icons.access_time,
-                () => controller.sortNotes(SortType.dateDesc),
-              ),
-              _buildSortOption(
-                'Date Created (Oldest First)',
-                Icons.access_time,
-                () => controller.sortNotes(SortType.dateAsc),
-              ),
-              _buildSortOption(
-                'Title (A-Z)',
-                Icons.sort_by_alpha,
-                () => controller.sortNotes(SortType.titleAsc),
-              ),
-              _buildSortOption(
-                'Title (Z-A)',
-                Icons.sort_by_alpha,
-                () => controller.sortNotes(SortType.titleDesc),
-              ),
-              _buildSortOption(
-                'Color',
-                Icons.color_lens,
-                () => controller.sortNotes(SortType.colorAsc),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton(
-                onPressed: () => Get.back(),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Note->Sort_Options_Title'.tr,
+                  style: Get.textTheme.titleLarge?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: const Text('Cancel'),
-              ),
-            ],
+                const SizedBox(height: 20),
+                _buildSortOption(
+                  'Note->Sort_Options_Date_Desc'.tr,
+                  Icons.access_time,
+                  () => controller.sortNotes(SortType.dateDesc),
+                ),
+                _buildSortOption(
+                  'Note->Sort_Options_Date_Asc'.tr,
+                  Icons.access_time,
+                  () => controller.sortNotes(SortType.dateAsc),
+                ),
+                _buildSortOption(
+                  'Note->Sort_Options_Title_Asc'.tr,
+                  Icons.sort_by_alpha,
+                  () => controller.sortNotes(SortType.titleAsc),
+                ),
+                _buildSortOption(
+                  'Note->Sort_Options_Title_Desc'.tr,
+                  Icons.sort_by_alpha,
+                  () => controller.sortNotes(SortType.titleDesc),
+                ),
+                _buildSortOption(
+                  'Note->Sort_Options_Color_Asc'.tr,
+                  Icons.color_lens,
+                  () => controller.sortNotes(SortType.colorAsc),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () => Get.back(),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text('Global->Cancel'.tr),
+                ),
+              ],
+            ),
           ),
         ),
       ),

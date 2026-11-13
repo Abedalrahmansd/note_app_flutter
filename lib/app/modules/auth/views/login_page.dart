@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:note_app/app/routes/app_routes.dart';
+import 'package:notes_app/app/routes/app_routes.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../theme/theme_controller.dart';
 import '../controllers/auth_controller.dart';
@@ -30,27 +30,27 @@ class LoginPage extends GetView<AuthController> {
                 children: [
                   const SizedBox(height: 40),
                   Text(
-                    'Welcome Back',
+                    'Login->Title_Text'.tr,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Login to continue your notes journey',
+                    'Login->Subtitle_Text'.tr,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.hintColor,
                     ),
                   ),
                   const SizedBox(height: 40),
                   AuthTextField(
-                    label: 'Email',
+                    label: 'Auth->Email'.tr,
                     keyboardType: TextInputType.emailAddress,
                     onChanged: (v) => controller.email.value = v,
                   ),
                   const SizedBox(height: 20),
                   AuthTextField(
-                    label: 'Password',
+                    label: 'Auth->Password'.tr,
                     obscureText: controller.obscurePassword.value,
                     onChanged: (v) => controller.password.value = v,
                     suffixIcon: IconButton(
@@ -72,7 +72,7 @@ class LoginPage extends GetView<AuthController> {
                     child: TextButton(
                       onPressed: () {}, // Add forgot password
                       child: Text(
-                        'Forgot Password?',
+                        'Auth->Forgot_Password'.tr,
                         style: TextStyle(color: AppPalette.primary),
                       ),
                     ),
@@ -80,7 +80,7 @@ class LoginPage extends GetView<AuthController> {
                   const SizedBox(height: 30),
                   Obx(
                     () => AuthButton(
-                      text: 'Login',
+                      text: 'Auth->Login'.tr,
                       onPressed: controller.login,
                       isLoading: controller.isLoading.value,
                     ),
@@ -127,13 +127,13 @@ class LoginPage extends GetView<AuthController> {
                       },
                       child: RichText(
                         text: TextSpan(
-                          text: "Don't have an account? ",
+                          text: 'Auth->No_Account'.tr,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.hintColor,
                           ),
                           children: [
                             TextSpan(
-                              text: 'Register',
+                              text: 'Auth->Create_Account_Link'.tr,
                               style: TextStyle(
                                 color: AppPalette.primary,
                                 fontWeight: FontWeight.w600,

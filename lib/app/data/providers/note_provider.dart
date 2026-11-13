@@ -1,106 +1,49 @@
 import 'package:get/get.dart';
 import '../../core/network/api_service.dart';
-import '../models/note_model.dart';
 
+/// Thin wrapper over the notes REST API.
+///
+/// Methods return the raw [Response] (body already JSON-decoded). The controller
+/// turns a successful body into a `NoteModel` with `NoteModel.fromEnvelope`;
+/// for failures it reads the server's message from the same body (401 / 422 /
+/// 500 ...). Decoding inside the provider used to throw on those error bodies.
 class NoteProvider extends GetConnect {
   final ApiService api = Get.find<ApiService>();
-  Future<Response<List<NoteModel>>> getNotes() async => api.get(
-    '/notes',
-    decoder: (data) =>
-        (data['data'] as List).map((e) => NoteModel.fromJson(e)).toList(),
-  );
 
-  Future<Response<NoteModel>> createNote(Map<String, dynamic> body) {
-    return api.post(
-      '/notes',
-      body,
-      decoder: (data) =>
-          NoteModel.fromJson(data['data']), // Laravel returns wrapped response
-    );
-  }
+  Future<Response> getNotes() => api.get('/notes');
 
-  Future<Response<NoteModel>> updateNote(int id, Map<String, dynamic> body) {
-    return api.post(
-      '/notes/$id',
-      body,
-      decoder: (data) => NoteModel.fromJson(data['data']),
-    );
-  }
+  Future<Response> createNote(Map<String, dynamic> body) =>
+      api.post('/notes', body);
 
-  Future<Response> deleteNote(int id) {
-    return api.delete('/notes/$id');
-  }
+  Future<Response> updateNote(int id, Map<String, dynamic> body) =>
+      api.post('/notes/$id', body);
 
-  Future<Response<NoteModel>> pinNote(int id) {
-    return api.post(
-      '/notes/$id/pin',
-      {},
-      decoder: (data) => NoteModel.fromJson(data['data']),
-    );
-  }
+  Future<Response> deleteNote(int id) => api.delete('/notes/$id');
 
-  Future<Response<NoteModel>> unpinNote(int id) {
-    return api.post(
-      '/notes/$id/unpin',
-      {},
-      decoder: (data) => NoteModel.fromJson(data['data']),
-    );
-  }
+  Future<Response> pinNote(int id) => api.post('/notes/$id/pin', {});
 
-  Future<Response<NoteModel>> archiveNote(int id) {
-    return api.post(
-      '/notes/$id/archive',
-      {},
-      decoder: (data) => NoteModel.fromJson(data['data']),
-    );
-  }
+  Future<Response> unpinNote(int id) => api.post('/notes/$id/unpin', {});
 
-  Future<Response<NoteModel>> unarchiveNote(int id) {
-    return api.post(
-      '/notes/$id/unarchive',
-      {},
-      decoder: (data) => NoteModel.fromJson(data['data']),
-    );
-  }
+  Future<Response> archiveNote(int id) => api.post('/notes/$id/archive', {});
 
-  Future<Response<NoteModel>> markDeleted(int id) {
-    return api.post(
-      '/notes/$id/mark-deleted',
-      {},
-      decoder: (data) => NoteModel.fromJson(data['data']),
-    );
-  }
+  Future<Response> unarchiveNote(int id) =>
+      api.post('/notes/$id/unarchive', {});
 
-  Future<Response<NoteModel>> addTags(int id, List<String> tags) {
-    return api.post('/notes/$id/tags', {
-      'tags': tags,
-    }, decoder: (data) => NoteModel.fromJson(data['data']));
-  }
+  Future<Response> markDeleted(int id) => api.post('/notes/$id/mark-deleted', {});
 
-  Future<Response<NoteModel>> removeTags(int id, List<String> tags) {
-    return api.post('/notes/$id/tags/remove', {
-      'tags': tags,
-    }, decoder: (data) => NoteModel.fromJson(data['data']));
-  }
-  //uncompleted backend
-  /* Future<Response<NoteModel>> changeCategory(int id, int categoryId) {
-    return api.post(
-      '/notes/$id/category',
-      {'category_id': categoryId},
-      decoder: (data) => NoteModel.fromJson(data['data']),
-    );
-  } */
-  //
+  Future<Response> addTags(int id, List<String> tags) =>
+      api.post('/notes/$id/tags', {'tags': tags});
 
-  Future<Response<NoteModel>> changeColor(int id, String color) {
-    return api.post('/notes/$id/color', {
-      'color': color,
-    }, decoder: (data) => NoteModel.fromJson(data['data']));
-  }
+  Future<Response> removeTags(int id, List<String> tags) =>
+      api.post('/notes/$id/tags/remove', {'tags': tags});
 
-  Future<Response<NoteModel>> changeStatus(int id, String status) {
-    return api.post('/notes/$id/status', {
-      'status': status,
-    }, decoder: (data) => NoteModel.fromJson(data['data']));
-  }
+  // uncompleted backend
+  // Future<Response> changeCategory(int id, int categoryId) =>
+  //     api.post('/notes/$id/category', {'category_id': categoryId});
+
+  Future<Response> changeColor(int id, String color) =>
+      api.post('/notes/$id/color', {'color': color});
+
+  Future<Response> changeStatus(int id, String status) =>
+      api.post('/notes/$id/status', {'status': status});
 }

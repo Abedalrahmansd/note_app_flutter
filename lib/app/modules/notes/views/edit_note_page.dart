@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:note_app/app/modules/notes/controllers/implementations/i_note_controller.dart';
-import 'package:note_app/theme/theme_controller.dart';
+import 'package:notes_app/app/data/helpers/lang_helpers.dart';
+import 'package:notes_app/app/modules/notes/controllers/implementations/i_note_controller.dart';
+import 'package:notes_app/theme/theme_controller.dart';
+import 'package:typeset/typeset.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../data/models/note_model.dart';
 import 'package:hexcolor/hexcolor.dart';
+import '../../../utils/helping_functions.dart';
 
 class NoteEditPage extends StatefulWidget {
   final NoteModel? note;
@@ -19,27 +22,33 @@ class _NoteEditPageState extends State<NoteEditPage> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   late String _selectedColor;
+  late final String _initialColor;
   late bool _isPinned;
   final _focusNode = FocusNode();
   final themeController = Get.find<ThemeController>();
+  late ThemeData theme;
 
   @override
   void initState() {
     super.initState();
+    theme = themeController.currentTheme.value;
     _titleController = TextEditingController(text: widget.note?.title ?? '');
-    _contentController = TextEditingController(
+    _contentController = TypeSetEditingController(
       text: widget.note?.content ?? '',
     );
     _selectedColor =
         widget.note?.color ??
         (themeController.currentTheme.value == AppTheme.darkTheme
             ? AppPalette.noteColors
-                  .where((c) => c['name'] == 'Black')
+                  .where((c) => c['name'] == 'Midnight Black')
                   .first['color']
             : AppPalette.noteColors
-                  .where((c) => c['name'] == 'White')
+                  .where((c) => c['name'] == 'Classic White')
                   .first['color']);
     _isPinned = widget.note?.isPinned ?? false;
+    // Notes from the API/Hive carry '#RRGGBB'; the colour picker uses 'RRGGBB'.
+    _selectedColor = hexWithoutHash(_selectedColor);
+    _initialColor = _selectedColor;
 
     // Auto-focus content field if no title
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,22 +82,30 @@ class _NoteEditPageState extends State<NoteEditPage> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
-                    vertical: 16,
+                    vertical: 8,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TextField(
+                        textDirection: autoTextDirection(_titleController.text),
                         controller: _titleController,
-                        style: TextStyle(
-                          fontSize: 28,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          // fontSize: 28,
                           fontWeight: FontWeight.w700,
                           color: _getContrastColor(HexColor(_selectedColor)),
                         ),
                         decoration: InputDecoration(
+                          fillColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
                           border: InputBorder.none,
-                          hintText: 'Title',
-                          hintStyle: TextStyle(
+                          hintText: 'Note->New->Title'.tr,
+                          hintStyle: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                             color: _getContrastColor(
                               HexColor(_selectedColor),
                             ).withOpacity(0.5),
@@ -97,19 +114,45 @@ class _NoteEditPageState extends State<NoteEditPage> {
                         ),
                         maxLines: 1,
                       ),
-                      const SizedBox(height: 8),
+                      // const SizedBox(height: 8),
                       TextField(
+                        textDirection: autoTextDirection(
+                          _contentController.text,
+                        ),
+                        onChanged: (value) => setState(() {}),
                         controller: _contentController,
+                        contextMenuBuilder: (context, editableTextState) {
+                          return AdaptiveTextSelectionToolbar.buttonItems(
+                            anchors: editableTextState.contextMenuAnchors,
+                            buttonItems: [
+                              // Add TypeSet formatting options to the context menu
+                              ...getTypesetContextMenus(
+                                editableTextState: editableTextState,
+                                // Optional: specify which formatting options to include
+                                // styleTypes: [StyleTypeEnum.bold, StyleTypeEnum.italic],
+                              ),
+                              // Keep the default context menu items
+                              ...editableTextState.contextMenuButtonItems
+                                  .sublist(0, 5),
+                            ],
+                          );
+                        },
                         focusNode: _focusNode,
-                        style: TextStyle(
-                          fontSize: 18,
-                          height: 1.5,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          // fontSize: 16,
+                          // height: 1.5,
                           color: _getContrastColor(HexColor(_selectedColor)),
                         ),
                         decoration: InputDecoration(
+                          hoverColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                          fillColor: Colors.transparent,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
                           border: InputBorder.none,
-                          hintText: 'Start typing...',
-                          hintStyle: TextStyle(
+                          hintText: 'Note->New->Subtitle'.tr,
+                          hintStyle: theme.textTheme.bodyMedium?.copyWith(
                             color: _getContrastColor(
                               HexColor(_selectedColor),
                             ).withOpacity(0.5),
@@ -143,8 +186,8 @@ class _NoteEditPageState extends State<NoteEditPage> {
         onPressed: () => _confirmExit(context),
       ),
       title: Text(
-        isEditing ? 'Edit Note' : 'New Note',
-        style: TextStyle(color: iconColor),
+        isEditing ? 'Note->Edit->Page_Title'.tr : 'Note->New->Page_Title'.tr,
+        style: TextStyle(color: iconColor, fontWeight: FontWeight.bold),
       ),
       actions: [
         if (isEditing)
@@ -163,6 +206,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
           icon: Icon(Icons.check, color: iconColor),
           onPressed: () => _saveNote(context),
         ),
+        SizedBox(width: 8),
       ],
     );
   }
@@ -186,7 +230,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Note Color',
+                'Note->Color_Selection'.tr,
                 style: TextStyle(
                   color: iconColor,
                   fontSize: 16,
@@ -289,22 +333,22 @@ class _NoteEditPageState extends State<NoteEditPage> {
       AlertDialog(
         backgroundColor: const Color(0xFF2C2C2C),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Note', style: TextStyle(color: AppPalette.primary)),
-        content: const Text(
-          'Are you sure you want to permanently delete this note?',
+        title: Text(
+          'Note->Delete_Note'.tr,
+          style: TextStyle(color: AppPalette.primary),
+        ),
+        content: Text(
+          'Note->Delete_Confirm_Title'.tr,
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text(
-              'CANCEL',
-              style: TextStyle(color: Colors.white70),
-            ),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+            child: const Text('حذف', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -319,9 +363,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
   Future<bool> _confirmExit(BuildContext context) async {
     if ((_titleController.text == (widget.note?.title ?? '')) &&
         (_contentController.text == (widget.note?.content ?? '')) &&
-        (_selectedColor ==
-            (widget.note?.color ??
-                AppPalette.primary.value.toRadixString(16))) &&
+        (_selectedColor == _initialColor) &&
         (_isPinned == (widget.note?.isPinned ?? false))) {
       Get.back();
       return Future.value(false);
@@ -332,24 +374,27 @@ class _NoteEditPageState extends State<NoteEditPage> {
         backgroundColor: const Color(0xFF2C2C2C),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Discard Changes?',
+          'Note->Unsaved_Changes_Title'.tr,
           style: TextStyle(color: AppPalette.primary),
         ),
-        content: const Text(
-          'You have unsaved changes. Are you sure you want to discard them?',
+        content: Text(
+          'Note->Unsaved_Changes_Subtitle'.tr,
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text(
-              'CANCEL',
+            child: Text(
+              'Global->Cancel'.tr,
               style: TextStyle(color: Colors.white70),
             ),
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('DISCARD', style: TextStyle(color: Colors.red)),
+            child: Text(
+              'Global->Ignore'.tr,
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),

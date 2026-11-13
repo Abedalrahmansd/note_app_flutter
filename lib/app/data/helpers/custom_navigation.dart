@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../modules/notes/views/edit_note_page.dart';
+import '../../modules/settings/view/settings.dart';
 import '../models/note_model.dart';
 
 class SlideRightRoute extends PageRouteBuilder {
@@ -47,8 +48,36 @@ class SlideRightRoute extends PageRouteBuilder {
       );
 }
 
+//slideleft route
+class SlideLeftRoute extends PageRouteBuilder {
+  final Widget page;
+
+  SlideLeftRoute({required this.page})
+    : super(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const curve = Curves.fastEaseInToSlowEaseOut;
+
+          final offsetAnimation = Tween<Offset>(
+            begin: const Offset(-1.0, 0.0),
+            end: Offset.zero,
+          ).chain(CurveTween(curve: curve)).animate(animation);
+
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
+      );
+}
+
 void openNoteEditPage(NoteModel? note) {
   Navigator.of(
     Get.context!,
   ).push(SlideRightRoute(page: NoteEditPage(note: note)));
+}
+
+class CustomNavigation {
+  static void navigateToSettingsPage() {
+    Navigator.of(Get.context!).push(SlideLeftRoute(page: SettingsPage()));
+  }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import '../../../data/models/note_model.dart';
+import '../../../utils/helping_functions.dart';
 import 'implementations/i_note_controller.dart';
 
 class OfflineNoteController extends GetxController implements INoteController {
@@ -59,7 +60,7 @@ class OfflineNoteController extends GetxController implements INoteController {
         id: 0, // Hive will assign an ID later
         title: title,
         content: content,
-        color: "#$color",
+        color: normalizeHexColor(color),
         isPinned: isPinned,
         status: 'draft',
         createdAt: DateTime.now(),
@@ -91,7 +92,7 @@ class OfflineNoteController extends GetxController implements INoteController {
         final updated = note.copyWith(
           title: title,
           content: content,
-          color: color != null ? "#$color" : null,
+          color: color != null ? normalizeHexColor(color) : null,
           isPinned: isPinned,
           updatedAt: DateTime.now(),
         );
@@ -242,7 +243,7 @@ class OfflineNoteController extends GetxController implements INoteController {
   Future<void> changeColor(int id, String color) async {
     final note = _noteBox.get(id);
     if (note != null) {
-      final updated = note.copyWith(color: color, updatedAt: DateTime.now());
+      final updated = note.copyWith(color: normalizeHexColor(color), updatedAt: DateTime.now());
       await _noteBox.put(id, updated);
       _refreshNoteInMemory(id, updated);
       //Get.snackbar('Color Changed', 'Note color changed (offline)');

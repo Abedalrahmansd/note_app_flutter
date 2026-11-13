@@ -28,32 +28,32 @@ class RegisterPage extends GetView<AuthController> {
                 children: [
                   const SizedBox(height: 40),
                   Text(
-                    'Create Account',
+                    'Register->Title_Text'.tr,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Start organizing your notes today',
+                    'Register->Subtitle_Text'.tr,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.hintColor,
                     ),
                   ),
                   const SizedBox(height: 40),
                   AuthTextField(
-                    label: 'Full Name',
+                    label: 'Global->Full_Name'.tr,
                     onChanged: (v) => controller.name.value = v,
                   ),
                   const SizedBox(height: 20),
                   AuthTextField(
-                    label: 'Email',
+                    label: 'Auth->Email'.tr,
                     keyboardType: TextInputType.emailAddress,
                     onChanged: (v) => controller.email.value = v,
                   ),
                   const SizedBox(height: 20),
                   AuthTextField(
-                    label: 'Password',
+                    label: 'Auth->Password'.tr,
                     obscureText: controller.obscurePassword.value,
                     onChanged: (v) => controller.password.value = v,
                     suffixIcon: IconButton(
@@ -71,7 +71,7 @@ class RegisterPage extends GetView<AuthController> {
                   ),
                   const SizedBox(height: 20),
                   AuthTextField(
-                    label: 'Confirm Password',
+                    label: 'Auth->Confirm_Password'.tr,
                     obscureText: controller.obscureConfirmPassword.value,
                     onChanged: (v) => controller.confirmPassword.value = v,
                     suffixIcon: IconButton(
@@ -90,7 +90,7 @@ class RegisterPage extends GetView<AuthController> {
                   const SizedBox(height: 30),
                   Obx(
                     () => AuthButton(
-                      text: 'Register',
+                      text: 'Global->Create'.tr,
                       onPressed: controller.register,
                       isLoading: controller.isLoading.value,
                     ),
@@ -134,13 +134,13 @@ class RegisterPage extends GetView<AuthController> {
                       },
                       child: RichText(
                         text: TextSpan(
-                          text: "Already have an account? ",
+                          text: 'Auth->Have_Account'.tr,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.hintColor,
                           ),
                           children: [
                             TextSpan(
-                              text: 'Login',
+                              text: 'Auth->Login'.tr,
                               style: TextStyle(
                                 color: AppPalette.primary,
                                 fontWeight: FontWeight.w600,

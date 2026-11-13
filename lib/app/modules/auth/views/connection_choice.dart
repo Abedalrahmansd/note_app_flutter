@@ -77,7 +77,7 @@ class _ConnectionChoiceScreenState extends State<ConnectionChoiceScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Choose Connection Mode',
+                      'CS->T_Text'.tr,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -85,7 +85,7 @@ class _ConnectionChoiceScreenState extends State<ConnectionChoiceScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Select how you want to use the app',
+                      'CS->S_Text'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
@@ -102,18 +102,16 @@ class _ConnectionChoiceScreenState extends State<ConnectionChoiceScreen>
                   children: [
                     _ConnectionCard(
                       icon: Icons.cloud_off_rounded,
-                      title: "Continue Offline",
-                      subtitle: "Access local notes without internet",
-                      // \nChanges will sync when back online",
+                      title: "CS->Offline_Title".tr,
+                      subtitle: "CS->Offline_Subtitle".tr,
                       color: isDark ? Colors.teal.shade300 : Colors.teal,
                       onTap: () => _handleOfflineChoice(),
                     ),
                     const SizedBox(height: 20),
                     _ConnectionCard(
                       icon: Icons.cloud_rounded,
-                      title: "Continue Online",
-                      subtitle:
-                          "Sync across all devices\nRequires internet connection\nBeta feature",
+                      title: 'CS->Online_Title'.tr,
+                      subtitle: 'CS->Online_Subtitle'.tr,
                       color: isDark
                           ? Colors.blue.shade300
                           : Colors.blue.shade600,

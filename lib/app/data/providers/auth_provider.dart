@@ -1,26 +1,30 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:note_app/app/core/constants/app_constants.dart';
+import 'package:notes_app/app/core/constants/app_constants.dart';
 
 import '../../core/network/api_service.dart';
 
 class AuthProvider extends GetConnect {
+  AuthProvider({String? baseUrl}) : _baseUrl = baseUrl ?? webBaseUrl;
+
+  final String _baseUrl;
+
   Future<Response> login(String email, String password) =>
-      post('$webBaseUrl/login', {'email': email, 'password': password});
+      post('$_baseUrl/login', {'email': email, 'password': password});
 
   Future<Response> register(
     String name,
     String email,
     String password,
     String confirmPassword,
-  ) => post('$webBaseUrl/register', {
+  ) => post('$_baseUrl/register', {
     'name': name,
     'email': email,
     'password': password,
     'password_confirmation': confirmPassword,
   });
   Future<Response> forgotPassword(String email) =>
-      post('$webBaseUrl/forgot-password', {'email': email});
+      post('$_baseUrl/forgot-password', {'email': email});
 
   Future<Response> logout() async {
     final ApiService api = Get.find();

@@ -1,1 +1,1 @@
-const String webBaseUrl = 'http://192.168.10.120:8001/api';
+const String webBaseUrl = 'https://abedalrahman.bilalsaad.com/note_app/api';

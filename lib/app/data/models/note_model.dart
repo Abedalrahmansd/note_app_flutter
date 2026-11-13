@@ -54,26 +54,61 @@ class NoteModel extends HiveObject {
     this.createdAt,
     this.updatedAt,
   });
+  /// Parses one note from the API. Tolerant on purpose: MySQL/Laravel often
+  /// sends booleans as 0/1 and ids as strings, and tags as a comma string or a list.
   factory NoteModel.fromJson(Map<String, dynamic> json) => NoteModel(
-    id: json['id'],
-    title: json['title'],
-    content: json['content'],
-    color: json['color'],
-    isPinned: json['is_pinned'],
-    isArchived: json['is_archived'],
-    isDeleted: json['is_deleted'],
-    category: json['category'],
-    tags: json['tags'] != null
-        ? (json['tags'] as String).split(',').map((e) => e.trim()).toList()
-        : [],
-    status: json['status'],
-    createdAt: json['created_at'] != null
-        ? DateTime.parse(json['created_at'])
-        : null,
-    updatedAt: json['updated_at'] != null
-        ? DateTime.parse(json['updated_at'])
-        : null,
+    id: _asInt(json['id']),
+    title: (json['title'] ?? '').toString(),
+    content: json['content']?.toString(),
+    color: json['color']?.toString(),
+    isPinned: _asBool(json['is_pinned']),
+    isArchived: _asBool(json['is_archived']),
+    isDeleted: _asBool(json['is_deleted']),
+    category: json['category']?.toString(),
+    tags: _asTags(json['tags']),
+    status: json['status']?.toString(),
+    createdAt: _asDate(json['created_at']),
+    updatedAt: _asDate(json['updated_at']),
   );
+
+  /// Reads `{ "data": { ...note... } }` (what the API returns for one note).
+  /// Returns null for anything else, e.g. an error body.
+  static NoteModel? fromEnvelope(dynamic body) {
+    if (body is Map && body['data'] is Map) {
+      return NoteModel.fromJson(Map<String, dynamic>.from(body['data'] as Map));
+    }
+    return null;
+  }
+
+  /// Reads `{ "data": [ ...notes... ] }`. Returns null for anything else.
+  static List<NoteModel>? listFromEnvelope(dynamic body) {
+    if (body is Map && body['data'] is List) {
+      return (body['data'] as List)
+          .whereType<Map>()
+          .map((e) => NoteModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    return null;
+  }
+
+  static int _asInt(dynamic v) => v is int ? v : int.parse(v.toString());
+
+  static bool? _asBool(dynamic v) {
+    if (v == null) return null;
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    final s = v.toString().toLowerCase();
+    return s == 'true' || s == '1';
+  }
+
+  static List<String> _asTags(dynamic v) {
+    if (v == null) return [];
+    final parts = v is List ? v.map((e) => e.toString()) : v.toString().split(',');
+    return parts.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+  }
+
+  static DateTime? _asDate(dynamic v) =>
+      v == null ? null : DateTime.tryParse(v.toString());
 
   NoteModel copyWith({
     int? id,

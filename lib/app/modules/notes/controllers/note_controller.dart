@@ -2,16 +2,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/exceptions/api_exception.dart';
 import '../../../data/models/note_model.dart';
 import '../../../data/providers/note_provider.dart';
+import '../../../utils/helping_functions.dart';
 import 'implementations/i_note_controller.dart';
 
+/// Online mode: notes live on the server (REST API).
+///
+/// `allNotes` is the single source of truth. `notes` is the list currently on
+/// screen (all notes, or only archived ones) and is rebuilt from `allNotes`
+/// after every change, so create/update/delete/pin/archive can never leave the
+/// two lists disagreeing.
 class NoteController extends GetxController implements INoteController {
   @override
   final notes = <NoteModel>[].obs;
   @override
   final allNotes = <NoteModel>[].obs;
-  final provider = NoteProvider();
+  final NoteProvider provider;
   @override
   final TextEditingController searchController = TextEditingController();
   @override
@@ -20,6 +28,9 @@ class NoteController extends GetxController implements INoteController {
   RxBool showArchived = false.obs;
   @override
   RxBool showDeleted = false.obs;
+
+  NoteController({NoteProvider? provider})
+    : provider = provider ?? NoteProvider();
 
   @override
   void onInit() {
@@ -33,16 +44,55 @@ class NoteController extends GetxController implements INoteController {
     super.onClose();
   }
 
-  // Extension to convert Color to hex string
+  // ---- list bookkeeping ---------------------------------------------------
+
+  /// Rebuilds the visible list from [allNotes] (respecting the archive filter
+  /// and the current sort order).
+  void _refreshView() {
+    if (showArchived.value) {
+      notes.value = allNotes.where((n) => n.isArchived ?? false).toList();
+    } else {
+      notes.assignAll(allNotes);
+    }
+    sortNotes(currentSortType);
+  }
+
+  /// Puts [note] into [allNotes] (replacing the old copy, or adding it first).
+  void _upsert(NoteModel note) {
+    final index = allNotes.indexWhere((n) => n.id == note.id);
+    if (index == -1) {
+      allNotes.insert(0, note);
+    } else {
+      allNotes[index] = note;
+    }
+    _refreshView();
+  }
+
+  /// Runs an API call that returns the updated note; shows the server's error
+  /// message when it fails.
+  Future<void> _apply(Future<Response> request) async {
+    final res = await request;
+    final note = res.isOk ? NoteModel.fromEnvelope(res.body) : null;
+    if (note != null) {
+      _upsert(note);
+    } else {
+      showApiError(res);
+    }
+  }
+
+  // ---- CRUD ----------------------------------------------------------------
 
   @override
   Future<void> fetchNotes() async {
     final response = await provider.getNotes();
-    if (response.isOk) {
-      allNotes.assignAll(response.body ?? []);
-      notes.assignAll(allNotes);
-      sortNotes(currentSortType);
-      if (showArchived.value) filterOnlyArchived();
+    final fetched = response.isOk
+        ? NoteModel.listFromEnvelope(response.body)
+        : null;
+    if (fetched != null) {
+      allNotes.assignAll(fetched);
+      _refreshView();
+    } else {
+      showApiError(response);
     }
   }
 
@@ -53,35 +103,16 @@ class NoteController extends GetxController implements INoteController {
     String color,
     bool isPinned,
   ) async {
-    // print("Creating note with title: $title, content: $content, color: $color");
-    // return;
-    if (title.isNotEmpty || content.isNotEmpty) {
-      //Get.snackbar('Error', 'Title cannot be empty');
-      // title = 'Untitled Note';
-
-      final body = {
+    if (title.isEmpty && content.isEmpty) return;
+    await _apply(
+      provider.createNote({
         'title': title,
         'content': content,
-        'color': "#$color", // Assuming color is a hex string
+        'color': normalizeHexColor(color),
         'status': 'draft',
-        // Optional fields:
         'is_pinned': isPinned,
-        // 'is_archived': false,
-        // 'is_deleted': false,
-        // 'category': null,
-        // 'tags': null,
-      };
-
-      final response = await provider.createNote(body);
-
-      if (response.isOk && response.body != null) {
-        notes.insert(0, response.body!); // update UI
-        sortNotes(currentSortType);
-        //Get.snackbar('Success', 'Note created');
-      } else {
-        //Get.snackbar('Error', 'Failed to create note');
-      }
-    }
+      }),
+    );
   }
 
   @override
@@ -92,95 +123,71 @@ class NoteController extends GetxController implements INoteController {
     String? color,
     bool? isPinned,
   ) async {
-    if ((title?.isNotEmpty ?? false) || (content?.isNotEmpty ?? false)) {
-      final body = {
+    if ((title?.isEmpty ?? true) && (content?.isEmpty ?? true)) return;
+    await _apply(
+      provider.updateNote(id, {
         'title': title,
         'content': content,
-        'color': color != null
-            ? "#$color"
-            : null, // Assuming color is a hex string
+        'color': color != null ? normalizeHexColor(color) : null,
         'is_pinned': isPinned,
-        // 'status': 'draft', // or 'published', etc.
-      };
-
-      final res = await provider.updateNote(id, body);
-      if (res.isOk && res.body != null) {
-        final index = notes.indexWhere((n) => n.id == id);
-        if (index != -1) notes[index] = res.body!;
-        notes.refresh();
-        sortNotes(currentSortType);
-        //Get.snackbar('Updated', 'Note updated successfully');
-      } else {
-        //Get.snackbar('Error', 'Failed to update note');
-      }
-    }
+      }),
+    );
   }
 
   @override
   Future<void> deleteNote(int id) async {
     final res = await provider.deleteNote(id);
     if (res.isOk) {
+      allNotes.removeWhere((n) => n.id == id);
       notes.removeWhere((n) => n.id == id);
-      //Get.snackbar('Deleted', 'Note deleted successfully');
     } else {
-      //Get.snackbar('Error', 'Failed to delete note');
+      showApiError(res);
     }
   }
 
-  // Helper: Always sort pinned notes first, then by provided comparator
+  // ---- sorting / filtering -------------------------------------------------
+
+  // Always sort pinned notes first, then by the chosen order.
   Comparator<NoteModel> _withPinnedFirst(Comparator<NoteModel> secondary) {
     return (a, b) {
       final aPinned = a.isPinned ?? false;
       final bPinned = b.isPinned ?? false;
       if (aPinned != bPinned) {
-        return aPinned ? -1 : 1; // true first (pinned on top)
+        return aPinned ? -1 : 1; // pinned on top
       }
       return secondary(a, b);
     };
   }
 
-  // Comparators for secondary sorting
   final Comparator<NoteModel> _dateComparator = (a, b) {
     final aDate = a.createdAt ?? DateTime(0);
     final bDate = b.createdAt ?? DateTime(0);
-    return bDate.compareTo(aDate); // Newest first
+    return bDate.compareTo(aDate); // newest first
   };
 
-  final Comparator<NoteModel> _titleComparator = (a, b) {
-    final aTitle = (a.title).toLowerCase();
-    final bTitle = (b.title).toLowerCase();
-    return aTitle.compareTo(bTitle);
-  };
+  final Comparator<NoteModel> _titleComparator = (a, b) =>
+      a.title.toLowerCase().compareTo(b.title.toLowerCase());
 
-  final Comparator<NoteModel> _colorComparator = (a, b) {
-    final aColor = a.color ?? '';
-    final bColor = b.color ?? '';
-    return aColor.compareTo(bColor);
-  };
+  final Comparator<NoteModel> _colorComparator = (a, b) =>
+      (a.color ?? '').compareTo(b.color ?? '');
 
   @override
   void sortNotes(SortType type) {
+    currentSortType = type;
     switch (type) {
       case SortType.dateDesc:
-        currentSortType = SortType.dateDesc;
         notes.sort(_withPinnedFirst(_dateComparator));
         break;
       case SortType.dateAsc:
-        currentSortType = SortType.dateAsc;
-        notes.sort(
-          _withPinnedFirst((a, b) => _dateComparator(b, a)),
-        ); // Oldest first
+        notes.sort(_withPinnedFirst((a, b) => _dateComparator(b, a)));
         break;
       case SortType.titleAsc:
-        currentSortType = SortType.titleAsc;
         notes.sort(_withPinnedFirst(_titleComparator));
         break;
       case SortType.titleDesc:
-        currentSortType = SortType.titleDesc;
         notes.sort(_withPinnedFirst((a, b) => _titleComparator(b, a)));
         break;
       case SortType.colorAsc:
-        currentSortType = SortType.colorAsc;
         notes.sort(_withPinnedFirst(_colorComparator));
         break;
     }
@@ -193,152 +200,46 @@ class NoteController extends GetxController implements INoteController {
       unfilterAll();
       return;
     }
-
-    // print(notes);
-    notes.value = allNotes.where((note) => note.isArchived ?? false).toList();
     if (toggle) showArchived.value = true;
-    sortNotes(currentSortType);
+    _refreshView();
   }
 
   @override
   void unfilterAll() {
-    notes.assignAll(allNotes);
     showArchived.value = false;
-    sortNotes(currentSortType);
+    _refreshView();
   }
+
+  // ---- per-note actions (each returns the updated note) ---------------------
 
   @override
-  Future<void> pinNote(int id) async {
-    final res = await provider.pinNote(id);
-    if (res.isOk && res.body != null) {
-      final index = allNotes.indexWhere((n) => n.id == id);
-      if (index != -1) allNotes[index] = res.body!;
-      notes.assignAll(allNotes);
-      sortNotes(currentSortType);
-      //Get.snackbar('Pinned', 'Note pinned successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to pin note');
-    }
-  }
+  Future<void> pinNote(int id) => _apply(provider.pinNote(id));
 
   @override
-  Future<void> unpinNote(int id) async {
-    final res = await provider.unpinNote(id);
-    if (res.isOk && res.body != null) {
-      final index = allNotes.indexWhere((n) => n.id == id);
-      if (index != -1) allNotes[index] = res.body!;
-      notes.assignAll(allNotes);
-      sortNotes(currentSortType);
-      //Get.snackbar('Unpinned', 'Note unpinned successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to unpin note');
-    }
-  }
+  Future<void> unpinNote(int id) => _apply(provider.unpinNote(id));
 
   @override
-  Future<void> archiveNote(int id) async {
-    final res = await provider.archiveNote(id);
-    if (res.isOk && res.body != null) {
-      final index = allNotes.indexWhere((n) => n.id == id);
-      if (index != -1) allNotes[index] = res.body!;
-      notes.assignAll(allNotes);
-      sortNotes(currentSortType);
-      //Get.snackbar('Archived', 'Note archived successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to archive note');
-    }
-  }
+  Future<void> archiveNote(int id) => _apply(provider.archiveNote(id));
 
   @override
-  Future<void> unarchiveNote(int id) async {
-    final res = await provider.unarchiveNote(id);
-    if (res.isOk && res.body != null) {
-      final index = allNotes.indexWhere((n) => n.id == id);
-      if (index != -1) allNotes[index] = res.body!;
-      notes.assignAll(allNotes);
-      filterOnlyArchived(false);
-      //Get.snackbar('Unarchived', 'Note unarchived successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to unarchive note');
-    }
-  }
+  Future<void> unarchiveNote(int id) => _apply(provider.unarchiveNote(id));
 
   @override
-  Future<void> markDeleted(int id) async {
-    final res = await provider.markDeleted(id);
-    if (res.isOk && res.body != null) {
-      final index = notes.indexWhere((n) => n.id == id);
-      if (index != -1) notes[index] = res.body!;
-      // notes.refresh();
-      sortNotes(currentSortType);
-      //Get.snackbar('Deleted', 'Marked deleted successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to mark note as deleted');
-    }
-  }
+  Future<void> markDeleted(int id) => _apply(provider.markDeleted(id));
 
   @override
-  Future<void> addTags(int id, List<String> tags) async {
-    final res = await provider.addTags(id, tags);
-    if (res.isOk && res.body != null) {
-      final index = notes.indexWhere((n) => n.id == id);
-      if (index != -1) notes[index] = res.body!;
-      notes.refresh();
-      //Get.snackbar('Tags Added', 'Tags added successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to add tags');
-    }
-  }
+  Future<void> addTags(int id, List<String> tags) =>
+      _apply(provider.addTags(id, tags));
 
   @override
-  Future<void> removeTags(int id, List<String> tags) async {
-    final res = await provider.removeTags(id, tags);
-    if (res.isOk && res.body != null) {
-      final index = notes.indexWhere((n) => n.id == id);
-      if (index != -1) notes[index] = res.body!;
-      notes.refresh();
-      //Get.snackbar('Tags Removed', 'Tags removed successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to remove tags');
-    }
-  }
+  Future<void> removeTags(int id, List<String> tags) =>
+      _apply(provider.removeTags(id, tags));
 
   @override
-  Future<void> changeColor(int id, String color) async {
-    final res = await provider.changeColor(id, color);
-    if (res.isOk && res.body != null) {
-      final index = notes.indexWhere((n) => n.id == id);
-      if (index != -1) notes[index] = res.body!;
-      notes.refresh();
-      //Get.snackbar('Color Changed', 'Note color changed successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to change note color');
-    }
-  }
-
-  //uncompleted backend
-  /* Future<void> changeCategory(int id, int categoryId) async {
-    final res = await provider.changeCategory(id, categoryId);
-    if (res.isOk && res.body != null) {
-      final index = notes.indexWhere((n) => n.id == id);
-      if (index != -1) notes[index] = res.body!;
-      notes.refresh();
-      //Get.snackbar('Category Changed', 'Note category changed successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to change note category');
-    }
-  } */
+  Future<void> changeColor(int id, String color) =>
+      _apply(provider.changeColor(id, normalizeHexColor(color)));
 
   @override
-  Future<void> changeStatus(int id, String status) async {
-    final res = await provider.changeStatus(id, status);
-    if (res.isOk && res.body != null) {
-      final index = notes.indexWhere((n) => n.id == id);
-      if (index != -1) notes[index] = res.body!;
-      notes.refresh();
-      //Get.snackbar('Status Changed', 'Note status changed successfully');
-    } else {
-      //Get.snackbar('Error', 'Failed to change note status');
-    }
-  }
+  Future<void> changeStatus(int id, String status) =>
+      _apply(provider.changeStatus(id, status));
 }
